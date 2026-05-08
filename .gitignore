@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+backend/.venv/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Local data artifacts
+backend/data/
+backend/*.db
+backend/agentic_viz.db
+
+# OS/editor
+.DS_Store
+Thumbs.db
