@@ -1,3 +1,5 @@
+from numbers import Number
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -10,6 +12,48 @@ from app.schemas import ReportCreate, ReportOut
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 orchestrator = ReportOrchestrator()
+
+
+def _pick_primary_metric(period_data: list[dict]) -> str | None:
+    if not period_data:
+        return None
+
+    preferred = ("revenue", "sales", "amount", "profit", "total", "quantity", "count")
+    numeric_keys = [key for key in period_data[0] if isinstance(period_data[0].get(key), Number)]
+    for key in preferred:
+        match = next((item for item in numeric_keys if key in item.lower()), None)
+        if match:
+            return match
+    return numeric_keys[0] if numeric_keys else None
+
+
+def _build_kpi_cards(period_data: list[dict]) -> list[dict]:
+    if not period_data:
+        return []
+
+    metric = _pick_primary_metric(period_data)
+    numeric_rows = [row for row in period_data if metric and isinstance(row.get(metric), Number)]
+    if not metric or not numeric_rows:
+        return []
+
+    values = [float(row[metric]) for row in numeric_rows]
+    total_value = sum(values)
+    average_value = total_value / len(values)
+    latest_value = values[-1]
+    previous_value = values[-2] if len(values) > 1 else None
+    delta_pct = None
+    if previous_value not in (None, 0):
+        delta_pct = round(((latest_value - previous_value) / previous_value) * 100, 2)
+
+    return [
+        {"label": f"Total {metric.replace('_', ' ').title()}", "value": round(total_value, 2)},
+        {"label": f"Average {metric.replace('_', ' ').title()}", "value": round(average_value, 2)},
+        {
+            "label": f"Latest {metric.replace('_', ' ').title()}",
+            "value": round(latest_value, 2),
+            "delta": delta_pct,
+        },
+    ]
 
 
 @router.post("/generate", response_model=ReportOut)
@@ -51,3 +95,23 @@ def list_reports(dataset_id: int | None = None, db: Session = Depends(get_db), u
     if dataset_id:
         query = query.filter(Report.dataset_id == dataset_id)
     return query.order_by(Report.id.desc()).all()
+
+
+@router.post("/{report_id}/kpis")
+def report_kpis(report_id: int, payload: dict, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    report = (
+        db.query(Report)
+        .join(Dataset, Dataset.id == Report.dataset_id)
+        .filter(Report.id == report_id, Dataset.owner_id == user.id)
+        .first()
+    )
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    period_data = payload.get("period_data") or []
+    cards = _build_kpi_cards(period_data)
+    status_value = "ok" if cards else "mapping_fallback"
+    if not cards:
+        cards = [{"label": "No KPI data available", "value": 0}]
+
+    return {"status": status_value, "cards": cards}
