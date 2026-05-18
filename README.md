@@ -59,7 +59,27 @@ Frontend app:
 http://127.0.0.1:5173
 ```
 
-## 3) Demo workflow
+## 3) Automation scripts
+
+Run from repository root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\safe-sync.ps1
+```
+
+Safe sync with backend restart:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\safe-sync.ps1 -RestartBackend
+```
+
+Restart backend and frontend services (kills existing and starts fresh):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\restart-services.ps1
+```
+
+## 4) Demo workflow
 
 1. Register and login.
 2. Upload a CSV/Excel/XML using drag-and-drop.
@@ -75,7 +95,7 @@ http://127.0.0.1:5173
 - Widgets: `/api/widgets` (create, list, update, delete)
 - Dashboard: `/api/dashboard/{dataset_id}`
 
-## Testing
+## 5) Testing
 
 ```powershell
 cd backend
