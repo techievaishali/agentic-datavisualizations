@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import pandas as pd
 
+from app.agents.report_summary_agent import ReportSummaryAgent
 from app.agents.visualization_agent import VisualizationAgent, build_period_aggregations
 
 
 class ReportOrchestrator:
     def __init__(self):
         self.viz = VisualizationAgent()
+        self.summary = ReportSummaryAgent()
 
     @staticmethod
     def _fallback_period_aggregations(df: pd.DataFrame, profile: dict) -> dict:
@@ -54,10 +56,18 @@ class ReportOrchestrator:
         elif nums:
             periods = self._fallback_period_aggregations(df, profile)
 
+        ai_summary = self.summary.summarize(
+            profile=profile,
+            suggestions=suggestions,
+            aggregations=periods,
+            period=period,
+        )
+
         return {
             "selected_period": period,
             "suggestions": suggestions,
             "aggregations": periods,
+            "ai_summary": ai_summary,
             "theme_defaults": {
                 "primary": "#1f77b4",
                 "secondary": "#ff7f0e",

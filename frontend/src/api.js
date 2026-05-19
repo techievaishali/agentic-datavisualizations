@@ -23,6 +23,11 @@ export async function login(form) {
   return data;
 }
 
+export async function getCurrentUser() {
+  const { data } = await api.get("/auth/me");
+  return data;
+}
+
 export async function uploadDataset(datasetName, file) {
   const body = new FormData();
   body.append("dataset_name", datasetName);
@@ -33,6 +38,11 @@ export async function uploadDataset(datasetName, file) {
 
 export async function listDatasets() {
   const { data } = await api.get("/datasets");
+  return data;
+}
+
+export async function getDatasetRecords(datasetId, params) {
+  const { data } = await api.get(`/datasets/${datasetId}/records`, { params });
   return data;
 }
 
@@ -68,5 +78,15 @@ export async function deleteWidget(widgetId) {
 
 export async function getDashboard(datasetId) {
   const { data } = await api.get(`/dashboard/${datasetId}`);
+  return data;
+}
+
+export async function getWidgetSummary(widgetId, periodData) {
+  const { data } = await api.post(`/widgets/${widgetId}/summary`, { period_data: periodData });
+  return data;
+}
+
+export async function getReportKpis(reportId, periodData) {
+  const { data } = await api.post(`/reports/${reportId}/kpis`, { period_data: periodData });
   return data;
 }

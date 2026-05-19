@@ -2,12 +2,6 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-.coverage
-.coverage.*
-coverage.xml
-htmlcov/
-pytestdebug.log
-junit*.xml
 .venv/
 backend/.venv/
 
@@ -16,6 +10,7 @@ node_modules/
 frontend/dist/
 
 # Local data artifacts
+/data/
 backend/data/
 backend/*.db
 backend/agentic_viz.db
@@ -23,4 +18,3 @@ backend/agentic_viz.db
 # OS/editor
 .DS_Store
 Thumbs.db
-.vscode/

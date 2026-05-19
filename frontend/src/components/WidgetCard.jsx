@@ -1,13 +1,28 @@
 import { useState } from "react";
-import { deleteWidget, updateWidget } from "../api";
+import { deleteWidget, getWidgetSummary, updateWidget } from "../api";
 import ChartRenderer from "./ChartRenderer";
 
 const CHART_TYPES = ["line", "bar", "scatter", "pie", "kpi"];
 const PATTERNS = ["solid", "stripe", "dot", "crosshatch"];
 
-export default function WidgetCard({ widget, periodData, columns, onUpdated, isSelected, onToggleSelect }) {
+export default function WidgetCard({
+  widget,
+  periodData,
+  comparisonData = [],
+  currentPeriodLabel = "current",
+  comparisonPeriodLabel = "comparison",
+  columns,
+  onUpdated,
+  isSelected,
+  onToggleSelect,
+  onDataPointClick,
+}) {
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [summaryData, setSummaryData] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState("");
   const [form, setForm] = useState({
     title: widget.title,
     chart_type: widget.chart_type,
@@ -15,6 +30,7 @@ export default function WidgetCard({ widget, periodData, columns, onUpdated, isS
     y_field: widget.y_field || "",
     color: widget.color,
     pattern: widget.pattern,
+    show_trend_line: Boolean(widget.config?.show_trend_line),
   });
 
   const save = async () => {
@@ -25,6 +41,7 @@ export default function WidgetCard({ widget, periodData, columns, onUpdated, isS
       y_field: form.y_field || null,
       color: form.color,
       pattern: form.pattern,
+      config: { ...(widget.config || {}), show_trend_line: form.show_trend_line },
     });
     setEditing(false);
     onUpdated();
@@ -39,6 +56,22 @@ export default function WidgetCard({ widget, periodData, columns, onUpdated, isS
       onUpdated();
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleToggleSummary = async () => {
+    if (showSummary) { setShowSummary(false); return; }
+    if (summaryData) { setShowSummary(true); return; }
+    setSummaryLoading(true);
+    setSummaryError("");
+    try {
+      const result = await getWidgetSummary(widget.id, periodData);
+      setSummaryData(result);
+      setShowSummary(true);
+    } catch {
+      setSummaryError("Failed to generate summary.");
+    } finally {
+      setSummaryLoading(false);
     }
   };
 
@@ -57,6 +90,14 @@ export default function WidgetCard({ widget, periodData, columns, onUpdated, isS
           <h4>{widget.title}</h4>
         </div>
         <div className="widget-actions">
+          <button
+            className={showSummary ? "ghost widget-summary-active" : "ghost"}
+            onClick={handleToggleSummary}
+            disabled={summaryLoading}
+            title="Show or hide the AI-generated summary for this widget"
+          >
+            {summaryLoading ? "Generating..." : showSummary ? "Hide Graph Analysis" : "Graph Analysis"}
+          </button>
           <button className="ghost" onClick={() => setEditing((v) => !v)}>
             {editing ? "Cancel" : "Customize"}
           </button>
@@ -111,11 +152,56 @@ export default function WidgetCard({ widget, periodData, columns, onUpdated, isS
               </option>
             ))}
           </select>
+          <label className="trend-line-toggle">
+            <input
+              type="checkbox"
+              checked={form.show_trend_line}
+              onChange={(e) => setForm({ ...form, show_trend_line: e.target.checked })}
+            />
+            <span>Show trend line</span>
+          </label>
           <button onClick={save}>Save Widget</button>
         </div>
       )}
 
-      <ChartRenderer widget={widget} data={periodData} />
+      <div className="widget-comparison-grid">
+        <div>
+          <p className="muted">Current: {currentPeriodLabel}</p>
+          <ChartRenderer
+            widget={widget}
+            data={periodData}
+            onDataPointClick={(row, meta) =>
+              onDataPointClick?.(widget, row, periodData, currentPeriodLabel, meta)
+            }
+          />
+        </div>
+        <div>
+          <p className="muted">Compare: {comparisonPeriodLabel}</p>
+          <ChartRenderer
+            widget={widget}
+            data={comparisonData}
+            onDataPointClick={(row, meta) =>
+              onDataPointClick?.(widget, row, comparisonData, comparisonPeriodLabel, meta)
+            }
+          />
+        </div>
+      </div>
+
+      {showSummary && (
+        <div className="widget-summary-view">
+          <p className="widget-summary-badge">
+            Powered by LangChain · {summaryData?.provider || "deterministic"} · {summaryData?.model || "rules"}
+          </p>
+          <p className="widget-summary-text">{summaryData?.text || ""}</p>
+          {summaryData?.mode === "fallback" && (
+            <p className="muted widget-summary-note">
+              Deterministic summary shown. Set LLM_PROVIDER env variable for LangChain LLM summary.
+            </p>
+          )}
+        </div>
+      )}
+
+      {summaryError && <p className="error">{summaryError}</p>}
     </article>
   );
 }
