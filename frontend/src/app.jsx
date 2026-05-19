@@ -3,8 +3,11 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import {
   createWidget,
+  getDatasetRecords,
   generateReport,
+  getCurrentUser,
   getDashboard,
+  getReportKpis,
   listDatasets,
   listReports,
   listWidgets,
@@ -19,6 +22,7 @@ const PERIODS = ["daily", "biweekly", "monthly", "quarterly", "half_yearly", "ye
 
 export default function App() {
   const [authorized, setAuthorized] = useState(Boolean(localStorage.getItem("token")));
+  const [currentUser, setCurrentUser] = useState(null);
   const [datasets, setDatasets] = useState([]);
   const [selectedDatasetId, setSelectedDatasetId] = useState(null);
   const [reports, setReports] = useState([]);
@@ -26,8 +30,14 @@ export default function App() {
   const [widgets, setWidgets] = useState([]);
   const [selectedWidgetIds, setSelectedWidgetIds] = useState([]);
   const [period, setPeriod] = useState("monthly");
+  const [comparePeriod, setComparePeriod] = useState("quarterly");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [drillDown, setDrillDown] = useState(null);
+  const [drillDownLoading, setDrillDownLoading] = useState(false);
+  const [kpiCards, setKpiCards] = useState([]);
+  const [kpiMeta, setKpiMeta] = useState(null);
+  const [kpiLoading, setKpiLoading] = useState(false);
   const dashboardRef = useRef(null);
   const widgetsOnlyRef = useRef(null);
 
@@ -51,6 +61,19 @@ export default function App() {
     });
   }, [reportSpec, period]);
 
+  const comparePeriodData = useMemo(() => {
+    const records = reportSpec?.aggregations?.[comparePeriod] || [];
+    return records.map((r) => {
+      const obj = { ...r };
+      Object.keys(obj).forEach((k) => {
+        if (typeof obj[k] === "string" && obj[k].includes("T")) {
+          obj[k] = obj[k].slice(0, 10);
+        }
+      });
+      return obj;
+    });
+  }, [reportSpec, comparePeriod]);
+
   const refresh = async () => {
     const ds = await listDatasets();
     setDatasets(ds);
@@ -62,6 +85,7 @@ export default function App() {
   useEffect(() => {
     if (!authorized) return;
     refresh().catch(() => setError("Failed to fetch datasets."));
+    getCurrentUser().then(setCurrentUser).catch(() => {});
   }, [authorized]);
 
   useEffect(() => {
@@ -81,6 +105,17 @@ export default function App() {
   }, [selectedDatasetId]);
 
   useEffect(() => {
+    if (comparePeriod === period) {
+      const fallback = PERIODS.find((p) => p !== period) || period;
+      setComparePeriod(fallback);
+    }
+  }, [period, comparePeriod]);
+
+  useEffect(() => {
+    setDrillDown(null);
+  }, [selectedReport, period, comparePeriod]);
+
+  useEffect(() => {
     const currentIds = widgets.map((w) => w.id);
     if (!currentIds.length) {
       setSelectedWidgetIds([]);
@@ -94,6 +129,35 @@ export default function App() {
     });
   }, [widgets]);
 
+  useEffect(() => {
+    if (!selectedReport?.id || !periodData.length) {
+      setKpiCards([]);
+      setKpiMeta(null);
+      return;
+    }
+
+    let cancelled = false;
+    setKpiLoading(true);
+    getReportKpis(selectedReport.id, periodData)
+      .then((result) => {
+        if (cancelled) return;
+        setKpiCards(result?.cards || []);
+        setKpiMeta(result || null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setKpiCards([]);
+        setKpiMeta(null);
+      })
+      .finally(() => {
+        if (!cancelled) setKpiLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedReport, periodData]);
+
   const handleUpload = async (datasetName, file) => {
     setBusy(true);
     setError("");
@@ -101,7 +165,6 @@ export default function App() {
       const ds = await uploadDataset(datasetName, file);
       await refresh();
       setSelectedDatasetId(ds.id);
-      await createAutoReportForDataset(ds.id, false);
     } catch (e) {
       setError(e?.response?.data?.detail || "Upload failed");
     } finally {
@@ -109,13 +172,11 @@ export default function App() {
     }
   };
 
-  const createAutoReportForDataset = async (datasetId, manageBusy = true) => {
-    if (!datasetId) return;
-    if (manageBusy) {
-      setBusy(true);
-    }
+  const createAutoReport = async () => {
+    if (!selectedDatasetId) return;
+    setBusy(true);
     try {
-      const report = await generateReport(datasetId, period);
+      const report = await generateReport(selectedDatasetId, period);
       setSelectedReport(report);
       const spec = report.report_spec || {};
       const suggestions = spec.suggestions || [];
@@ -183,19 +244,13 @@ export default function App() {
       }
       const ws = await listWidgets(report.id);
       setWidgets(ws);
-      const rep = await listReports(datasetId);
+      const rep = await listReports(selectedDatasetId);
       setReports(rep);
     } catch (e) {
       setError(e?.response?.data?.detail || "Report generation failed");
     } finally {
-      if (manageBusy) {
-        setBusy(false);
-      }
+      setBusy(false);
     }
-  };
-
-  const createAutoReport = async () => {
-    await createAutoReportForDataset(selectedDatasetId, true);
   };
 
   const refreshWidgets = async () => {
@@ -287,12 +342,65 @@ export default function App() {
     );
   };
 
-  const selectAllWidgets = () => {
-    setSelectedWidgetIds(widgets.map((w) => w.id));
+  const toggleAllWidgets = () => {
+    // If all widgets are selected, deselect all. Otherwise, select all.
+    const allIds = widgets.map((w) => w.id);
+    if (selectedWidgetIds.length === allIds.length) {
+      setSelectedWidgetIds([]);
+    } else {
+      setSelectedWidgetIds(allIds);
+    }
   };
 
   const clearWidgetSelection = () => {
     setSelectedWidgetIds([]);
+  };
+
+  const handleChartPointClick = async (widget, row, sourceData, sourcePeriodLabel, clickMeta) => {
+    if (!row || !widget || !selectedDatasetId) return;
+    const xField = widget.x_field;
+    const selectedXValue = xField ? row[xField] : null;
+    if (selectedXValue === null || selectedXValue === undefined || selectedXValue === "") return;
+
+    setDrillDownLoading(true);
+    setError("");
+    try {
+      const result = await getDatasetRecords(selectedDatasetId, {
+        field: xField,
+        value: String(selectedXValue),
+        period: sourcePeriodLabel,
+        limit: 100,
+      });
+
+      setDrillDown({
+        widgetTitle: widget.title,
+        xField,
+        xValue: selectedXValue,
+        sourcePeriodLabel,
+        totalCount: result.total_count || 0,
+        records: result.records || [],
+        anchor: {
+          x: clickMeta?.clientX ?? window.innerWidth - 460,
+          y: clickMeta?.clientY ?? 160,
+        },
+      });
+    } catch (e) {
+      setError(e?.response?.data?.detail || "Unable to load drill-down records.");
+      setDrillDown({
+        widgetTitle: widget.title,
+        xField,
+        xValue: selectedXValue,
+        sourcePeriodLabel,
+        totalCount: 0,
+        records: [],
+        anchor: {
+          x: clickMeta?.clientX ?? window.innerWidth - 460,
+          y: clickMeta?.clientY ?? 160,
+        },
+      });
+    } finally {
+      setDrillDownLoading(false);
+    }
   };
 
   if (!authorized) {
@@ -306,6 +414,24 @@ export default function App() {
 
   return (
     <main className="app-shell">
+      <div className="session-topbar">
+        {currentUser && (
+          <span className="current-user-badge">
+            Logged in as <strong>{currentUser.full_name || currentUser.email}</strong>
+          </span>
+        )}
+        <button
+          className="ghost"
+          onClick={() => {
+            localStorage.removeItem("token");
+            setAuthorized(false);
+            setCurrentUser(null);
+          }}
+        >
+          Logout
+        </button>
+      </div>
+
       <header className="hero card">
         <h1 className="hero-title">Agentic E-commerce Dashboard</h1>
         <p className="hero-subtitle">
@@ -316,8 +442,6 @@ export default function App() {
 
       <section className="grid two-col">
         <UploadZone onUpload={handleUpload} />
-        {/* Temporary: hide Dataset and Report Controls panel */}
-        {/*
         <section className="card">
           <h3>Dataset and Report Controls</h3>
           <label>
@@ -346,74 +470,104 @@ export default function App() {
             </select>
           </label>
 
+          <label>
+            Compare with
+            <select value={comparePeriod} onChange={(e) => setComparePeriod(e.target.value)}>
+              {PERIODS.filter((p) => p !== period).map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <div className="actions">
             <button disabled={!selectedDatasetId || busy} onClick={createAutoReport}>
-              Auto Generate Report + Widgets
+              Generate reports
             </button>
             <button className="ghost" disabled={!selectedDatasetId || busy} onClick={loadDashboard}>
               Refresh Dashboard State
             </button>
-            <button className="ghost" disabled={!selectedDatasetId || busy} onClick={exportDashboardPdf}>
-              Export Dashboard to PDF
-            </button>
-            <button
-              className="ghost"
-              disabled={!selectedDatasetId || !selectedWidgetIds.length || busy}
-              onClick={exportSelectedWidgetsPdf}
-            >
-              Export Selected Widgets PDF
-            </button>
-            <button
-              className="ghost"
-              onClick={() => {
-                localStorage.removeItem("token");
-                setAuthorized(false);
-              }}
-            >
-              Logout
-            </button>
           </div>
         </section>
-        */}
       </section>
 
       {error && <p className="error">{error}</p>}
 
       <section className="dashboard-export-region" ref={dashboardRef}>
+        <section className="card kpi-strip-card">
+          <div className="kpi-strip-head">
+            <h3>KPI Snapshot</h3>
+            {kpiMeta && (
+              <p className="muted">
+                Powered by LangChain · {kpiMeta.provider} · {kpiMeta.model}
+              </p>
+            )}
+          </div>
+          {kpiLoading ? (
+            <p className="muted">Calculating KPI recommendations...</p>
+          ) : kpiCards.length ? (
+            <div className="kpi-strip-grid">
+              {kpiCards.map((card) => (
+                <article className="kpi-mini-card" key={card.key}>
+                  <p className="kpi-mini-label">{card.label}</p>
+                  <p className="kpi-mini-value">{card.value}</p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="muted">Generate a report to view KPI snapshot cards.</p>
+          )}
+        </section>
+
         <section className="card">
           <h3>Dynamic Widgets</h3>
           <p>
             Widgets are generated by the visualization agent. You can customize chart type, colors, patterns,
             and fields.
           </p>
-          {/* Temporary: hide selection summary and quick selection controls */}
-          {/*
+          <p className="drilldown-hint">Click chart data points to see underlying records.</p>
           <div className="selection-toolbar">
             <p className="muted">Selected for PDF export: {selectedWidgetIds.length}</p>
             <div className="selection-actions">
-              <button className="ghost" type="button" onClick={selectAllWidgets}>
+              <button className="ghost" type="button" onClick={toggleAllWidgets}>
                 Select All
+              </button>
+              <button className="ghost" disabled={!selectedDatasetId || busy} onClick={exportDashboardPdf}>
+                Export Dashboard to PDF
+              </button>
+              <button
+                className="ghost"
+                disabled={!selectedDatasetId || !selectedWidgetIds.length || busy}
+                onClick={exportSelectedWidgetsPdf}
+              >
+                Export Selected Widgets PDF
               </button>
               <button className="ghost" type="button" onClick={clearWidgetSelection}>
                 Clear
               </button>
             </div>
           </div>
-          */}
           <div className="widget-grid">
             {widgets.map((w) => (
               <WidgetCard
                 key={w.id}
                 widget={w}
                 periodData={periodData}
+                comparisonData={comparePeriodData}
+                currentPeriodLabel={period}
+                comparisonPeriodLabel={comparePeriod}
                 columns={selectedDataset?.profile?.columns || []}
                 onUpdated={refreshWidgets}
                 isSelected={selectedWidgetIds.includes(w.id)}
                 onToggleSelect={toggleWidgetSelection}
+                onDataPointClick={handleChartPointClick}
               />
             ))}
           </div>
           {!widgets.length && <p className="muted">No widgets available for this report yet.</p>}
+
+          {!drillDown && <p className="muted drilldown-empty-note">Select a widget point, bar, or slice.</p>}
         </section>
 
         <div className="two-col-bottom">
@@ -459,6 +613,60 @@ export default function App() {
           ))}
         </div>
       </section>
+
+      {drillDown && (
+        <aside
+          className="drilldown-preview-card"
+          style={{
+            left: `${Math.min(Math.max((drillDown.anchor?.x ?? 0) + 14, 16), window.innerWidth - 440)}px`,
+            top: `${Math.min(Math.max((drillDown.anchor?.y ?? 0) + 14, 90), window.innerHeight - 380)}px`,
+          }}
+        >
+          <div className="drilldown-head">
+            <h4>Drill-down Records</h4>
+            <button className="ghost" type="button" onClick={() => setDrillDown(null)}>
+              Close
+            </button>
+          </div>
+          <p className="muted">
+            <strong>{drillDown.widgetTitle}</strong> · {drillDown.sourcePeriodLabel}
+            {drillDown.xField ? ` · ${drillDown.xField}: ${drillDown.xValue}` : ""}
+          </p>
+          {drillDownLoading ? (
+            <p className="muted drilldown-empty-note">Loading drill-down records...</p>
+          ) : drillDown.records?.length ? (
+            <>
+              <div className="drilldown-table-wrap">
+                <table className="drilldown-table">
+                  <thead>
+                    <tr>
+                      {Object.keys(drillDown.records[0]).map((col) => (
+                        <th key={col}>{col}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {drillDown.records.slice(0, 12).map((row, idx) => (
+                      <tr key={`${idx}-${JSON.stringify(row)}`}>
+                        {Object.keys(drillDown.records[0]).map((col) => (
+                          <td key={`${idx}-${col}`}>{String(row[col] ?? "")}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {drillDown.totalCount > drillDown.records.length && (
+                <p className="muted drilldown-empty-note">
+                  Showing {drillDown.records.length} of {drillDown.totalCount} rows.
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="muted drilldown-empty-note">No underlying records found for that chart point.</p>
+          )}
+        </aside>
+      )}
     </main>
   );
 }

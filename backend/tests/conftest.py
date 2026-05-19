@@ -21,7 +21,6 @@ def test_engine():
     Base.metadata.create_all(bind=engine)
     yield engine
     Base.metadata.drop_all(bind=engine)
-    engine.dispose()
     if TEST_DB_PATH.exists():
         TEST_DB_PATH.unlink()
 

@@ -1,6 +1,6 @@
 # Agentic AI Data Visualization for E-commerce
 
-This repository provides a fully working end-to-end solution for autonomous data visualization with heterogeneous data sources.
+This repository provides autonomous data visualization with heterogeneous data sources.
 
 ## What this solution includes
 
@@ -25,7 +25,30 @@ This repository provides a fully working end-to-end solution for autonomous data
 - docs: architecture blueprint, implementation guide, project report draft, CI/CD reflection.
 - .github/workflows: CI pipeline.
 
-## Quick start in VS Code
+## Quick start (Automated)
+
+To start all services at once (kills any existing processes and restarts them fresh):
+
+**Windows:**
+```powershell
+.\start-services.bat
+# OR directly with PowerShell:
+.\start-services.ps1
+```
+
+**Linux/macOS:**
+```bash
+chmod +x start-services.sh
+./start-services.sh
+```
+
+This will:
+- Kill any running backend/frontend processes
+- Start the backend (FastAPI on port 8000)
+- Start the frontend (React/Vite on port 5173)
+- Display access URLs
+
+## Quick start in VS Code (Manual)
 
 ## 1) Backend setup
 
@@ -59,33 +82,40 @@ Frontend app:
 http://127.0.0.1:5173
 ```
 
-## 3) Automation scripts
-
-Run from repository root:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\safe-sync.ps1
-```
-
-Safe sync with backend restart:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\safe-sync.ps1 -RestartBackend
-```
-
-Restart backend and frontend services (kills existing and starts fresh):
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\restart-services.ps1
-```
-
-## 4) Demo workflow
+## 3) Demo workflow
 
 1. Register and login.
 2. Upload a CSV/Excel/XML using drag-and-drop.
 3. Select reporting period and click auto generate report.
 4. Edit widgets to customize chart type, colors, pattern, and fields.
 5. Refresh dashboard state to load saved API data.
+
+## Optional: Enable LangChain AI Report Summary
+
+The report generator now includes an `ai_summary` section in `report_spec`.
+If no LLM provider is configured, the app uses a deterministic fallback summary.
+
+### A) Gemini free tier (recommended)
+
+Set environment variables before starting backend:
+
+```powershell
+$env:LLM_PROVIDER="google"
+$env:LLM_MODEL="gemini-1.5-flash"
+$env:GOOGLE_API_KEY="<your_google_api_key>"
+```
+
+### B) Local Ollama
+
+Start Ollama locally and pull a model, then set:
+
+```powershell
+$env:LLM_PROVIDER="ollama"
+$env:LLM_MODEL="llama3.1:8b"
+$env:OLLAMA_BASE_URL="http://localhost:11434"
+```
+
+If not set, `LLM_PROVIDER` defaults to `none` and the fallback summary is used.
 
 ## API overview
 
@@ -95,11 +125,27 @@ powershell -ExecutionPolicy Bypass -File .\scripts\restart-services.ps1
 - Widgets: `/api/widgets` (create, list, update, delete)
 - Dashboard: `/api/dashboard/{dataset_id}`
 
-## 5) Testing
+## Testing
+
+Backend tests:
 
 ```powershell
 cd backend
 pytest
+```
+
+Frontend tests:
+
+```powershell
+cd frontend
+npm test
+```
+
+Optional frontend test modes:
+
+```powershell
+npm run test:watch
+npm run test:coverage
 ```
 
 ## Security baseline

@@ -104,3 +104,41 @@ class DashboardResponse(BaseModel):
     dataset: DatasetOut
     reports: list[ReportOut]
     widgets: list[WidgetOut]
+
+
+class DrilldownResponse(BaseModel):
+    field: str
+    value: str
+    period: str | None = None
+    total_count: int
+    records: list[dict]
+
+
+class WidgetSummaryRequest(BaseModel):
+    period_data: list[dict] = []
+
+
+class WidgetSummaryResponse(BaseModel):
+    text: str
+    mode: str
+    provider: str
+    model: str
+    status: str
+
+
+class ReportKpiRequest(BaseModel):
+    period_data: list[dict] = []
+
+
+class KpiCard(BaseModel):
+    key: str
+    label: str
+    value: str
+
+
+class ReportKpiResponse(BaseModel):
+    cards: list[KpiCard]
+    mode: str
+    provider: str
+    model: str
+    status: str
