@@ -16,6 +16,10 @@ import {
   YAxis,
 } from "recharts";
 
+const TREND_COLOR = "#c76d4a";
+const POINT_BORDER = "#ffffff";
+const PIE_COLORS = ["#18388f", "#5f8df0", "#c76d4a", "#3f8f72", "#f2b134", "#7b61ff", "#d94f70", "#4db6ac"];
+
 /** Compute linear regression slope and intercept from chart data. */
 function computeTrend(data, xField, yField) {
   const points = data
@@ -71,7 +75,8 @@ export default function ChartRenderer({ widget, data, onDataPointClick }) {
     return <p className="muted">No data available for this widget yet.</p>;
   }
 
-  const { chart_type, x_field, y_field, color, config = {} } = widget;
+  const { chart_type, x_field, y_field, color: rawColor, config = {} } = widget;
+  const color = rawColor || "#0078d4";
   const showTrend = Boolean(config.show_trend_line);
   if (chart_type === "kpi") {
     const values = data.map((d) => Number(d[y_field] || 0));
@@ -99,7 +104,7 @@ export default function ChartRenderer({ widget, data, onDataPointClick }) {
         cy={cy}
         r={4}
         fill={color}
-        stroke="#ffffff"
+        stroke={POINT_BORDER}
         strokeWidth={2}
         style={{ cursor: "pointer" }}
         onClick={(event) => onDataPointClick?.(payload, extractClickMeta(event))}
@@ -128,7 +133,7 @@ export default function ChartRenderer({ widget, data, onDataPointClick }) {
               <Line
                 type="linear"
                 dataKey="_trend"
-                stroke="#ff7300"
+                stroke={TREND_COLOR}
                 strokeWidth={2}
                 strokeDasharray="6 3"
                 dot={false}
@@ -156,7 +161,7 @@ export default function ChartRenderer({ widget, data, onDataPointClick }) {
               <Line
                 type="linear"
                 dataKey="_trend"
-                stroke="#ff7300"
+                stroke={TREND_COLOR}
                 strokeWidth={2}
                 strokeDasharray="6 3"
                 dot={false}
@@ -182,7 +187,7 @@ export default function ChartRenderer({ widget, data, onDataPointClick }) {
                     cy={cy}
                     r={5}
                     fill={color}
-                    stroke="#ffffff"
+                    stroke={POINT_BORDER}
                     strokeWidth={1.5}
                     style={{ cursor: "pointer" }}
                     onClick={(event) => onDataPointClick?.(payload, extractClickMeta(event))}
@@ -204,8 +209,8 @@ export default function ChartRenderer({ widget, data, onDataPointClick }) {
               return (
                 <Scatter
                   data={trendLine}
-                  fill="#ff7300"
-                  line={{ stroke: "#ff7300", strokeWidth: 2, strokeDasharray: "6 3" }}
+                  fill={TREND_COLOR}
+                  line={{ stroke: TREND_COLOR, strokeWidth: 2, strokeDasharray: "6 3" }}
                   shape={() => null}
                   name="Trend"
                 />
@@ -224,7 +229,7 @@ export default function ChartRenderer({ widget, data, onDataPointClick }) {
               {data.map((entry, index) => (
                 <Cell
                   key={`pie-cell-${index}`}
-                  fill={color}
+                  fill={PIE_COLORS[index % PIE_COLORS.length]}
                   style={{ cursor: "pointer" }}
                   onClick={(event) => onDataPointClick?.(entry, extractClickMeta(event))}
                 />
