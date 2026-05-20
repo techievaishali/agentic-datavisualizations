@@ -48,6 +48,12 @@ This will:
 - Start the frontend (React/Vite on port 5173)
 - Display access URLs
 
+Optional flags:
+```powershell
+.\start-services.ps1 -NoBackend    # Skip backend, start frontend only
+.\start-services.ps1 -NoFrontend   # Skip frontend, start backend only
+```
+
 ## Quick start in VS Code (Manual)
 
 ## 1) Backend setup
@@ -85,10 +91,10 @@ http://127.0.0.1:5173
 ## 3) Demo workflow
 
 1. Register and login.
-2. Upload a CSV/Excel/XML using drag-and-drop.
-3. Select reporting period and click auto generate report.
-4. Edit widgets to customize chart type, colors, pattern, and fields.
-5. Refresh dashboard state to load saved API data.
+2. Open the `Upload` tab and upload a CSV/Excel/XML file using drag-and-drop or browse.
+3. Click `Generate Report` to create charts, KPIs, and weekly metrics.
+4. Review the `Overview` tab for KPI snapshots, charts, highlights, and weekly aggregated metrics.
+5. Open `Analytics` (or click `Configure Dashboard`) to customize widget chart type, colors, pattern, and fields.
 
 ## Optional: Enable LangChain AI Report Summary
 

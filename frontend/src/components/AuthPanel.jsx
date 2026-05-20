@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { login, register } from "../api";
 
-export default function AuthPanel({ onLoggedIn }) {
+export default function AuthPanel({ onLoggedIn, onRegistered }) {
   const [form, setForm] = useState({ email: "", full_name: "", password: "" });
   const [mode, setMode] = useState("login");
   const [error, setError] = useState("");
@@ -12,6 +12,9 @@ export default function AuthPanel({ onLoggedIn }) {
     try {
       if (mode === "register") {
         await register(form);
+        onRegistered?.(
+          "Welcome to Agentic AI Dashboard. Upload a CSV, Excel (.xlsx/.xls), or XML file, then click Generate Report to visualize your data."
+        );
       }
       await login({ email: form.email, password: form.password });
       onLoggedIn();

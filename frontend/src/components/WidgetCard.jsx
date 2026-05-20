@@ -75,6 +75,10 @@ export default function WidgetCard({
     }
   };
 
+  if (summaryError) {
+    return null;
+  }
+
   return (
     <article className="card widget-card">
       <div className="widget-head">
@@ -106,7 +110,6 @@ export default function WidgetCard({
           </button>
         </div>
       </div>
-      <p className="muted">Pattern: {widget.pattern}</p>
 
       {editing && (
         <div className="widget-config">
@@ -200,8 +203,6 @@ export default function WidgetCard({
           )}
         </div>
       )}
-
-      {summaryError && <p className="error">{summaryError}</p>}
     </article>
   );
 }

@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
 
-export default function UploadZone({ onUpload }) {
+export default function UploadZone({ onUpload, onGenerateReport, generateReportDisabled = false }) {
   const [dragging, setDragging] = useState(false);
   const [datasetName, setDatasetName] = useState("");
   const [error, setError] = useState("");
+  const [hasUploadedFile, setHasUploadedFile] = useState(false);
   const inputRef = useRef(null);
 
   const inferDatasetName = (file) => {
@@ -16,18 +17,29 @@ export default function UploadZone({ onUpload }) {
     setDatasetName(finalName);
     setError("");
     await onUpload(finalName, file);
+    setHasUploadedFile(true);
   };
+
+  const generateEnabled = Boolean(onGenerateReport) && hasUploadedFile && !generateReportDisabled;
 
   return (
     <section className="card">
       <h3>Upload Data Source</h3>
       <p style={{ marginBottom: "8px" }}>Supports CSV, Excel, XML.</p>
-      <input
-        placeholder="Dataset name"
-        value={datasetName}
-        onChange={(e) => setDatasetName(e.target.value)}
-        style={{ marginBottom: "8px" }}
-      />
+      <div className="upload-name-row">
+        <input
+          placeholder="Dataset name"
+          value={datasetName}
+          onChange={(e) => setDatasetName(e.target.value)}
+        />
+        <button
+          type="button"
+          className="upload-file-btn"
+          onClick={() => inputRef.current?.click()}
+        >
+          Upload File
+        </button>
+      </div>
 
       <div
         className={`upload-zone ${dragging ? "dragging" : ""}`}
@@ -45,9 +57,16 @@ export default function UploadZone({ onUpload }) {
         }}
       >
         <p>Drop your data file here</p>
-        <button type="button" onClick={() => inputRef.current?.click()}>
-          Browse File
+        <div className="upload-actions">
+        <button
+          type="button"
+          className={`upload-generate-btn ${generateEnabled ? "is-enabled" : ""}`}
+          onClick={() => onGenerateReport?.()}
+          disabled={!generateEnabled}
+        >
+          Generate Report
         </button>
+        </div>
         <input
           ref={inputRef}
           type="file"

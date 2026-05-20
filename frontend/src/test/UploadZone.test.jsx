@@ -10,11 +10,11 @@ beforeEach(() => {
 });
 
 describe("UploadZone", () => {
-  it("renders the upload area and browse button", () => {
+  it("renders the upload area and upload file button", () => {
     render(<UploadZone onUpload={vi.fn()} />);
 
     expect(screen.getByText(/drop your data file here/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /browse file/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /upload file/i })).toBeInTheDocument();
   });
 
   it("renders dataset name input field", () => {
