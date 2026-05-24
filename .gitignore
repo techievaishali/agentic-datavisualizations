@@ -18,3 +18,11 @@ backend/agentic_viz.db
 # OS/editor
 .DS_Store
 Thumbs.db
+.vscode/
+
+# Secrets/env
+backend/.env
+
+# Generated reports/artifacts
+frontend/bundle-report.html
+frontend/.lighthouse-seo.json

@@ -89,6 +89,7 @@ def get_widget_summary(
         x_field=widget.x_field,
         y_field=widget.y_field,
         period_data=payload.period_data,
+        comparison_period_data=payload.comparison_period_data,
     )
     AuditAgent.log(db, "widget.summary", "widget", user.id, str(widget_id))
     return result

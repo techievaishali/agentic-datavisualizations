@@ -27,3 +27,11 @@ def decode_access_token(token: str) -> dict | None:
         return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
     except JWTError:
         return None
+
+
+def decode_access_token_ignore_expiry(token: str) -> dict | None:
+    """Decode token without checking expiration. Used for refresh token validation."""
+    try:
+        return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm], options={"verify_exp": False})
+    except JWTError:
+        return None

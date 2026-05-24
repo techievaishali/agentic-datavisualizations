@@ -16,6 +16,24 @@ class IngestionAgent:
         self.curated_dir.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
+    def _looks_like_datetime_column(column_name: str) -> bool:
+        name = column_name.lower()
+        return any(
+            token in name
+            for token in (
+                "date",
+                "time",
+                "timestamp",
+                "datetime",
+                "created",
+                "updated",
+                "month",
+                "year",
+                "dob",
+            )
+        )
+
+    @staticmethod
     def _snake_case(name: str) -> str:
         cleaned = re.sub(r"[^a-zA-Z0-9]+", "_", name).strip("_")
         return cleaned.lower()
@@ -27,7 +45,11 @@ class IngestionAgent:
         for col in result.columns:
             if result[col].dtype == "object":
                 result[col] = result[col].astype(str).str.strip()
-                parsed_date = pd.to_datetime(result[col], errors="coerce", utc=True)
+                if self._looks_like_datetime_column(col):
+                    parsed_date = pd.to_datetime(result[col], errors="coerce", utc=True)
+                else:
+                    parsed_date = pd.Series([pd.NaT] * len(result), index=result.index)
+
                 if parsed_date.notna().mean() > 0.75:
                     result[col] = parsed_date
                     continue
