@@ -19,6 +19,23 @@ def test_upload_csv_dataset_success(client, auth_context):
     assert "numeric_columns" in body["profile"]
 
 
+def test_upload_csv_does_not_misclassify_categorical_text_as_datetime(client, auth_context):
+    csv_content = "channel_group,revenue,purchases\norganic,100,2\npaid,180,3\n"
+    files = {"file": ("marketing.csv", csv_content, "text/csv")}
+
+    response = client.post(
+        "/api/datasets/upload",
+        data={"dataset_name": "Marketing Data"},
+        files=files,
+        headers=auth_context["headers"],
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["profile"]["datetime_columns"] == []
+    assert "channel_group" in body["profile"]["categorical_columns"]
+
+
 def test_upload_rejects_unsupported_file_type(client, auth_context):
     files = {"file": ("payload.exe", "not-a-dataset", "application/octet-stream")}
 

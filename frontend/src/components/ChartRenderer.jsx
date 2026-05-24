@@ -4,6 +4,7 @@ import {
   CartesianGrid,
   ComposedChart,
   Cell,
+  Legend,
   Line,
   LineChart,
   Pie,
@@ -70,6 +71,29 @@ function extractClickMeta(event) {
   };
 }
 
+function computeKpiDisplay(data, metricField) {
+  const metricName = String(metricField || "").toLowerCase();
+  const values = (Array.isArray(data) ? data : [])
+    .map((row) => Number(row?.[metricField]))
+    .filter((value) => Number.isFinite(value));
+
+  if (!values.length) {
+    return { text: "0", raw: 0 };
+  }
+
+  const isRateLike = /(rate|ratio|percent|pct|roi|conversion|ctr|cvr)/i.test(metricName);
+  const isAverageLike = /(avg|average|mean|median)/i.test(metricName);
+
+  if (isRateLike || isAverageLike) {
+    const avg = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const text = isRateLike ? `${avg.toFixed(2)}%` : avg.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    return { text, raw: avg };
+  }
+
+  const total = values.reduce((sum, value) => sum + value, 0);
+  return { text: total.toLocaleString(undefined, { maximumFractionDigits: 2 }), raw: total };
+}
+
 export default function ChartRenderer({ widget, data, onDataPointClick }) {
   if (!data?.length) {
     return <p className="muted">No data available for this widget yet.</p>;
@@ -78,14 +102,35 @@ export default function ChartRenderer({ widget, data, onDataPointClick }) {
   const { chart_type, x_field, y_field, color: rawColor, config = {} } = widget;
   const color = rawColor || "#0078d4";
   const showTrend = Boolean(config.show_trend_line);
+  const secondaryYField = config.secondary_y_field || null;
+  const stackFields = Array.isArray(config.stack_fields)
+    ? config.stack_fields.filter((field) => typeof field === "string" && field && field !== x_field)
+    : [];
+  const topN = Number.isFinite(Number(config.top_n)) ? Number(config.top_n) : 10;
+  const sortDesc = config.sort_desc !== false;
+  const horizontalData = [...data]
+    .filter((row) => Number.isFinite(Number(row?.[y_field])))
+    .sort((a, b) =>
+      sortDesc
+        ? Number(b?.[y_field] || 0) - Number(a?.[y_field] || 0)
+        : Number(a?.[y_field] || 0) - Number(b?.[y_field] || 0)
+    )
+    .slice(0, topN);
   if (chart_type === "kpi") {
-    const values = data.map((d) => Number(d[y_field] || 0));
-    const total = values.reduce((a, b) => a + b, 0);
-    return <div className="kpi-value">{total.toLocaleString()}</div>;
+    const kpi = computeKpiDisplay(data, y_field);
+    return <div className="kpi-value">{kpi.text}</div>;
   }
 
   if (!x_field || !y_field) {
     return <p className="muted">Set x and y fields in widget settings.</p>;
+  }
+
+  if ((chart_type === "dual_axis_combo" || chart_type === "grouped_bar" || chart_type === "line_compare") && !secondaryYField) {
+    return <p className="muted">Set primary and secondary numeric fields in widget settings.</p>;
+  }
+
+  if (chart_type === "stacked_bar" && !stackFields.length) {
+    return <p className="muted">Set stacked numeric fields in widget settings.</p>;
   }
 
   const handlePointClick = (event) => {
@@ -96,10 +141,12 @@ export default function ChartRenderer({ widget, data, onDataPointClick }) {
   };
 
   const renderClickableDot = (dotProps) => {
-    const { cx, cy, payload } = dotProps;
+    const { cx, cy, payload, index } = dotProps;
     if (typeof cx !== "number" || typeof cy !== "number") return null;
+    const pointId = payload?.id ?? payload?.row_index ?? payload?.[x_field] ?? payload?.[y_field] ?? "pt";
     return (
       <circle
+        key={`line-dot-${String(pointId)}-${String(index ?? 0)}`}
         cx={cx}
         cy={cy}
         r={4}
@@ -140,6 +187,32 @@ export default function ChartRenderer({ widget, data, onDataPointClick }) {
                 name="Trend"
               />
             )}
+          </LineChart>
+        ) : chart_type === "line_compare" ? (
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={x_field} />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey={y_field}
+              stroke={color}
+              strokeWidth={2}
+              dot={renderClickableDot}
+              activeDot={{ r: 6, onClick: handlePointClick, style: { cursor: "pointer" } }}
+              name={y_field}
+            />
+            <Line
+              type="monotone"
+              dataKey={secondaryYField}
+              stroke="#5f8df0"
+              strokeWidth={2}
+              dot={(props) => renderClickableDot({ ...props, stroke: "#5f8df0" })}
+              activeDot={{ r: 6, onClick: handlePointClick, style: { cursor: "pointer" } }}
+              name={secondaryYField}
+            />
           </LineChart>
         ) : chart_type === "bar" ? (
           <ComposedChart data={showTrend ? augmentWithTrend(data, y_field) : data}>
@@ -217,6 +290,104 @@ export default function ChartRenderer({ widget, data, onDataPointClick }) {
               );
             })()}
           </ScatterChart>
+        ) : chart_type === "dual_axis_combo" ? (
+          <ComposedChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={x_field} />
+            <YAxis yAxisId="left" />
+            <YAxis yAxisId="right" orientation="right" />
+            <Tooltip />
+            <Legend />
+            <Bar yAxisId="right" dataKey={secondaryYField} fill="#5f8df0" name={secondaryYField}>
+              {data.map((entry, index) => (
+                <Cell
+                  key={`dual-bar-cell-${index}`}
+                  fill="#5f8df0"
+                  style={{ cursor: "pointer" }}
+                  onClick={(event) => onDataPointClick?.(entry, extractClickMeta(event))}
+                />
+              ))}
+            </Bar>
+            <Line
+              yAxisId="left"
+              type="monotone"
+              dataKey={y_field}
+              stroke={color}
+              strokeWidth={2}
+              dot={renderClickableDot}
+              activeDot={{ r: 6, onClick: handlePointClick, style: { cursor: "pointer" } }}
+              name={y_field}
+            />
+          </ComposedChart>
+        ) : chart_type === "grouped_bar" ? (
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={x_field} />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey={y_field} fill={color} name={y_field}>
+              {data.map((entry, index) => (
+                <Cell
+                  key={`group-primary-cell-${index}`}
+                  fill={color}
+                  style={{ cursor: "pointer" }}
+                  onClick={(event) => onDataPointClick?.(entry, extractClickMeta(event))}
+                />
+              ))}
+            </Bar>
+            <Bar dataKey={secondaryYField} fill="#5f8df0" name={secondaryYField}>
+              {data.map((entry, index) => (
+                <Cell
+                  key={`group-secondary-cell-${index}`}
+                  fill="#5f8df0"
+                  style={{ cursor: "pointer" }}
+                  onClick={(event) => onDataPointClick?.(entry, extractClickMeta(event))}
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        ) : chart_type === "stacked_bar" ? (
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={x_field} />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {stackFields.map((field, index) => (
+              <Bar key={`stack-${field}`} dataKey={field} stackId="stack" fill={PIE_COLORS[index % PIE_COLORS.length]} name={field}>
+                {data.map((entry, rowIndex) => (
+                  <Cell
+                    key={`stack-cell-${field}-${rowIndex}`}
+                    fill={PIE_COLORS[index % PIE_COLORS.length]}
+                    style={{ cursor: "pointer" }}
+                    onClick={(event) => onDataPointClick?.(entry, extractClickMeta(event))}
+                  />
+                ))}
+              </Bar>
+            ))}
+          </BarChart>
+        ) : chart_type === "horizontal_bar" ? (
+          <BarChart
+            data={horizontalData}
+            layout="vertical"
+            margin={{ left: 20, right: 10, top: 5, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis type="number" />
+            <YAxis type="category" dataKey={x_field} width={140} />
+            <Tooltip />
+            <Bar dataKey={y_field} fill={color} name={y_field}>
+              {horizontalData.map((entry, index) => (
+                <Cell
+                  key={`horizontal-bar-cell-${index}`}
+                  fill={color}
+                  style={{ cursor: "pointer" }}
+                  onClick={(event) => onDataPointClick?.(entry, extractClickMeta(event))}
+                />
+              ))}
+            </Bar>
+          </BarChart>
         ) : (
           <PieChart>
             <Pie

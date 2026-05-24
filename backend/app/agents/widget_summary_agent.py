@@ -19,12 +19,29 @@ class WidgetSummaryAgent:
         self.temperature = settings.llm_temperature
 
     @staticmethod
+    def _to_float(value):
+        if isinstance(value, bool):
+            return None
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str):
+            cleaned = value.replace(",", "").replace("$", "").replace("%", "").strip()
+            if not cleaned:
+                return None
+            try:
+                return float(cleaned)
+            except ValueError:
+                return None
+        return None
+
+    @staticmethod
     def _deterministic_summary(
         title: str,
         chart_type: str,
         x_field: str | None,
         y_field: str | None,
         rows: list[dict],
+        comparison_rows: list[dict],
     ) -> str:
         if not rows:
             return (
@@ -35,7 +52,8 @@ class WidgetSummaryAgent:
         lines = [f"Widget: {title} ({chart_type} chart)"]
 
         if y_field:
-            values = [r.get(y_field) for r in rows if isinstance(r.get(y_field), (int, float))]
+            values = [WidgetSummaryAgent._to_float(r.get(y_field)) for r in rows]
+            values = [v for v in values if v is not None]
             if values:
                 total = sum(values)
                 avg = total / len(values)
@@ -45,10 +63,22 @@ class WidgetSummaryAgent:
                 lines.append(f"- Average {y_field}: {avg:,.2f}")
                 lines.append(f"- Highest value: {max_val:,.2f} | Lowest value: {min_val:,.2f}")
 
+                if comparison_rows:
+                    compare_values = [WidgetSummaryAgent._to_float(r.get(y_field)) for r in comparison_rows]
+                    compare_values = [v for v in compare_values if v is not None]
+                    if compare_values:
+                        compare_total = sum(compare_values)
+                        delta = total - compare_total
+                        delta_pct = (delta / compare_total * 100.0) if compare_total else 0.0
+                        direction = "up" if delta >= 0 else "down"
+                        lines.append(
+                            f"- Versus comparison period: {direction} by {abs(delta):,.2f} ({abs(delta_pct):.2f}%)."
+                        )
+
         if x_field and y_field:
             top_rows = sorted(
-                [r for r in rows if isinstance(r.get(y_field), (int, float))],
-                key=lambda r: r[y_field],
+                [r for r in rows if WidgetSummaryAgent._to_float(r.get(y_field)) is not None],
+                key=lambda r: WidgetSummaryAgent._to_float(r.get(y_field)) or 0,
                 reverse=True,
             )[:3]
             if top_rows:
@@ -66,10 +96,10 @@ class WidgetSummaryAgent:
             [
                 (
                     "system",
-                    "You are a data analyst assistant. Analyze the provided chart data and generate "
-                    "4-5 precise bullet-point insights. Use specific numbers from the data. "
-                    "Focus on key values, trends, comparisons, and one actionable recommendation. "
-                    "Be concise and avoid repeating the chart title.",
+                    "You are a senior data analyst. Generate a SHORT chart narrative. "
+                    "Return exactly 3 bullet points, each 1 sentence, each under 18 words. "
+                    "Use concrete numbers from the data and include one period-vs-comparison delta when possible. "
+                    "No headers, no markdown emphasis, no extra text.",
                 ),
                 (
                     "human",
@@ -77,8 +107,9 @@ class WidgetSummaryAgent:
                     "Chart type: {chart_type}\n"
                     "X axis field: {x_field}\n"
                     "Y axis field: {y_field}\n"
-                    "Data rows (sample): {rows}\n\n"
-                    "Return plain text bullet points only. No headers.",
+                    "Current period rows (sample): {rows}\n"
+                    "Comparison period rows (sample): {comparison_rows}\n\n"
+                    "Return plain text bullet points only.",
                 ),
             ]
         )
@@ -111,6 +142,24 @@ class WidgetSummaryAgent:
 
         return None, "provider not configured"
 
+    @staticmethod
+    def _compact_lines(text: str, max_lines: int = 3, max_chars_per_line: int = 120) -> str:
+        if not text:
+            return ""
+        raw_lines = [line.strip() for line in text.splitlines() if line.strip()]
+        if not raw_lines:
+            return ""
+
+        cleaned: list[str] = []
+        for line in raw_lines:
+            if not line.startswith("-"):
+                line = f"- {line.lstrip('- ').strip()}"
+            if len(line) > max_chars_per_line:
+                line = f"{line[:max_chars_per_line - 3].rstrip()}..."
+            cleaned.append(line)
+
+        return "\n".join(cleaned[:max_lines])
+
     def summarize(
         self,
         title: str,
@@ -118,14 +167,17 @@ class WidgetSummaryAgent:
         x_field: str | None,
         y_field: str | None,
         period_data: list[dict],
+        comparison_period_data: list[dict] | None = None,
     ) -> dict:
-        rows = period_data[:12]
+        rows = (period_data or [])[:12]
+        comparison_rows = (comparison_period_data or [])[:12]
         fallback_text = self._deterministic_summary(
             title=title,
             chart_type=chart_type,
             x_field=x_field,
             y_field=y_field,
             rows=rows,
+            comparison_rows=comparison_rows,
         )
 
         chain, status = self._build_chain()
@@ -146,13 +198,18 @@ class WidgetSummaryAgent:
                     "x_field": x_field or "none",
                     "y_field": y_field or "none",
                     "rows": rows,
+                    "comparison_rows": comparison_rows,
                 }
             )
             if not result or not result.strip():
                 raise ValueError("Empty response from LLM")
 
+            compact_result = self._compact_lines(result.strip())
+            if not compact_result:
+                raise ValueError("Unusable response from LLM")
+
             return {
-                "text": result.strip(),
+                "text": compact_result,
                 "mode": "llm",
                 "provider": self.provider,
                 "model": self.model,

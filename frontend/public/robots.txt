@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Allow: /assets/
+Allow: /index.html
+
+# Disallow private/admin paths if any
+Disallow: /api/
+Disallow: /admin/
+
+# Crawl delay (optional, in seconds)
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: http://127.0.0.1:4173/sitemap.xml

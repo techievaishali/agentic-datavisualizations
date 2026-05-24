@@ -1,0 +1,11 @@
+{
+  "name": "Agentic AI Data Visualization",
+  "short_name": "AI Data Viz",
+  "description": "Intelligent data analysis, visualization, and reporting with AI-powered recommendations",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#0078d4",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary"
+}
