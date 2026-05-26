@@ -23,6 +23,12 @@ Thumbs.db
 # Secrets/env
 backend/.env
 
+# Runtime/session artifacts
+.runtime/
+
 # Generated reports/artifacts
 frontend/bundle-report.html
 frontend/.lighthouse-seo.json
+frontend/src/test/Report/
+backend/tests/Report/
+tests/Report/

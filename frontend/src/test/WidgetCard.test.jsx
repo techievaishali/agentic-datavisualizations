@@ -35,6 +35,8 @@ const baseWidget = {
   config: {},
 };
 
+const samplePeriodData = [{ revenue: 100 }];
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(window, "confirm").mockReturnValue(true);
@@ -60,7 +62,7 @@ describe("WidgetCard", () => {
     render(
       <WidgetCard
         widget={baseWidget}
-        periodData={[]}
+        periodData={samplePeriodData}
         columns={["revenue"]}
         onUpdated={vi.fn()}
         isSelected={false}
@@ -80,7 +82,7 @@ describe("WidgetCard", () => {
     render(
       <WidgetCard
         widget={baseWidget}
-        periodData={[]}
+        periodData={samplePeriodData}
         columns={["revenue"]}
         onUpdated={onUpdated}
         isSelected={false}
@@ -102,7 +104,7 @@ describe("WidgetCard", () => {
     render(
       <WidgetCard
         widget={baseWidget}
-        periodData={[]}
+        periodData={samplePeriodData}
         columns={["revenue"]}
         onUpdated={onUpdated}
         isSelected={false}

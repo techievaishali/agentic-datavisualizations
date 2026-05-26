@@ -678,6 +678,35 @@ button.danger {
   align-items: end;
 }
 
+.anomaly-compact-panel .anomaly-date-group {
+  margin: 4px 0 8px;
+  grid-template-columns: minmax(118px, 1fr) minmax(118px, 1fr) minmax(120px, 170px);
+  grid-template-areas: "start end slider";
+  gap: 6px;
+  align-items: center;
+}
+
+.anomaly-compact-panel .anomaly-date-group .analytics-date-control {
+  gap: 0;
+}
+
+.anomaly-compact-panel .anomaly-date-group .analytics-date-control input[type="date"] {
+  padding: 4px 6px;
+  font-size: 11px;
+  min-height: 30px;
+}
+
+.anomaly-compact-panel .anomaly-date-group .analytics-slider-below {
+  margin-top: 0;
+  align-self: center;
+  justify-self: end;
+  width: min(100%, 160px);
+}
+
+.anomaly-compact-panel .anomaly-date-group .dual-range-slider-compact {
+  height: 18px;
+}
+
 .analytics-date-start {
   grid-area: start;
 }

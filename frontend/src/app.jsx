@@ -1837,85 +1837,83 @@ export default function App() {
                       ))}
                     </select>
                   </label>
-
-                  {overviewDateBounds && (
-                    <div className="analytics-date-group">
-                      <label className="analytics-date-control analytics-date-start">
-                        Start date
-                        <input
-                          type="date"
-                          value={overviewSelectedDates.start}
-                          onChange={(e) => {
-                            if (!overviewDateBounds) return;
-                            const { min, max } = overviewDateBounds;
-                            const selected = new Date(e.target.value).getTime();
-                            if (!Number.isNaN(selected)) {
-                              const start = min === max ? 0 : Math.round(((selected - min) / (max - min)) * 100);
-                              const clamped = Math.max(0, Math.min(100, start));
-                              setDateRange(([_, end]) => [clamped, Math.max(clamped, end)]);
-                            }
-                          }}
-                        />
-                      </label>
-
-                      <label className="analytics-date-control analytics-date-end">
-                        End date
-                        <input
-                          type="date"
-                          value={overviewSelectedDates.end}
-                          onChange={(e) => {
-                            if (!overviewDateBounds) return;
-                            const { min, max } = overviewDateBounds;
-                            const selected = new Date(e.target.value).getTime();
-                            if (!Number.isNaN(selected)) {
-                              const end = min === max ? 100 : Math.round(((selected - min) / (max - min)) * 100);
-                              const clamped = Math.max(0, Math.min(100, end));
-                              setDateRange(([start]) => [Math.min(start, clamped), clamped]);
-                            }
-                          }}
-                        />
-                      </label>
-
-                      <div className="analytics-slider-compact analytics-slider-below">
-                        <span className="analytics-slider-label">Date range</span>
-                        <div className="dual-range-slider-compact">
-                          <div className="dual-range-track-compact" />
-                          <div
-                            className="dual-range-fill-compact"
-                            style={{ left: `${dateRange[0]}%`, right: `${100 - dateRange[1]}%` }}
-                          />
-                          <input
-                            className="dual-range-thumb-compact dual-range-thumb-start-compact"
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={dateRange[0]}
-                            onChange={(e) => {
-                              const next = Number(e.target.value);
-                              setDateRange(([_, end]) => [Math.min(next, end), end]);
-                            }}
-                          />
-                          <input
-                            className="dual-range-thumb-compact dual-range-thumb-end-compact"
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={dateRange[1]}
-                            onChange={(e) => {
-                              const next = Number(e.target.value);
-                              setDateRange(([start]) => [start, Math.max(start, next)]);
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
               </section>
 
               <section className="card ai-insight-panel anomaly-compact-panel">
                 <h3>Anomaly Detection</h3>
+                {overviewDateBounds && (
+                  <div className="analytics-date-group anomaly-date-group">
+                    <label className="analytics-date-control analytics-date-start">
+                      <input
+                        aria-label="Start date"
+                        type="date"
+                        value={overviewSelectedDates.start}
+                        onChange={(e) => {
+                          if (!overviewDateBounds) return;
+                          const { min, max } = overviewDateBounds;
+                          const selected = new Date(e.target.value).getTime();
+                          if (!Number.isNaN(selected)) {
+                            const start = min === max ? 0 : Math.round(((selected - min) / (max - min)) * 100);
+                            const clamped = Math.max(0, Math.min(100, start));
+                            setDateRange(([_, end]) => [clamped, Math.max(clamped, end)]);
+                          }
+                        }}
+                      />
+                    </label>
+
+                    <label className="analytics-date-control analytics-date-end">
+                      <input
+                        aria-label="End date"
+                        type="date"
+                        value={overviewSelectedDates.end}
+                        onChange={(e) => {
+                          if (!overviewDateBounds) return;
+                          const { min, max } = overviewDateBounds;
+                          const selected = new Date(e.target.value).getTime();
+                          if (!Number.isNaN(selected)) {
+                            const end = min === max ? 100 : Math.round(((selected - min) / (max - min)) * 100);
+                            const clamped = Math.max(0, Math.min(100, end));
+                            setDateRange(([start]) => [Math.min(start, clamped), clamped]);
+                          }
+                        }}
+                      />
+                    </label>
+
+                    <div className="analytics-slider-compact analytics-slider-below">
+                      <div className="dual-range-slider-compact">
+                        <div className="dual-range-track-compact" />
+                        <div
+                          className="dual-range-fill-compact"
+                          style={{ left: `${dateRange[0]}%`, right: `${100 - dateRange[1]}%` }}
+                        />
+                        <input
+                          className="dual-range-thumb-compact dual-range-thumb-start-compact"
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={dateRange[0]}
+                          onChange={(e) => {
+                            const next = Number(e.target.value);
+                            setDateRange(([_, end]) => [Math.min(next, end), end]);
+                          }}
+                        />
+                        <input
+                          className="dual-range-thumb-compact dual-range-thumb-end-compact"
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={dateRange[1]}
+                          onChange={(e) => {
+                            const next = Number(e.target.value);
+                            setDateRange(([start]) => [start, Math.max(start, next)]);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {overviewAnomalies.length ? (
                   <ul className="ai-insight-list anomaly-compact-list">
                     {overviewAnomalies.slice(0, 8).map((item) => (

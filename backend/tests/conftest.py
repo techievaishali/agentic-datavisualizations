@@ -13,6 +13,12 @@ from app.models import Dataset, Report, User, Widget
 
 TEST_DB_PATH = Path("./test_agentic_viz.db")
 TEST_DB_URL = f"sqlite:///{TEST_DB_PATH}"
+REPORT_DIR = Path(__file__).resolve().parent / "Report"
+
+
+def pytest_configure(config):
+    # Ensure report directory exists for every test run.
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @pytest.fixture(scope="session")
