@@ -116,6 +116,7 @@ class DrilldownResponse(BaseModel):
 
 class WidgetSummaryRequest(BaseModel):
     period_data: list[dict] = []
+    comparison_period_data: list[dict] = []
 
 
 class WidgetSummaryResponse(BaseModel):

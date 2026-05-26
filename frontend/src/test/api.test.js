@@ -11,8 +11,13 @@ vi.mock("axios", () => {
     post: vi.fn(),
     put: vi.fn(),
     delete: vi.fn(),
+    defaults: {
+      baseURL: "/api",
+      headers: { common: {} },
+    },
     interceptors: {
       request: { use: vi.fn() },
+      response: { use: vi.fn() },
     },
   };
   return { default: { create: () => instance, ...instance } };

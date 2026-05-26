@@ -28,7 +28,10 @@ export default function UploadZone({ onUpload, onGenerateReport, generateReportD
       <p style={{ marginBottom: "8px" }}>Supports CSV, Excel, XML.</p>
       <div className="upload-name-row">
         <input
+          id="upload-dataset-name"
+          name="dataset_name"
           placeholder="Dataset name"
+          autocomplete="off"
           value={datasetName}
           onChange={(e) => setDatasetName(e.target.value)}
         />
@@ -68,9 +71,12 @@ export default function UploadZone({ onUpload, onGenerateReport, generateReportD
         </button>
         </div>
         <input
+          id="upload-file-input"
+          name="file_upload"
           ref={inputRef}
           type="file"
           accept=".csv,.xlsx,.xls,.xml"
+          autocomplete="off"
           style={{ display: "none" }}
           onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])}
         />

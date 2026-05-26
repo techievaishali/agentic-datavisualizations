@@ -37,6 +37,142 @@ body {
   gap: 12px;
 }
 
+.login-shell {
+  width: min(96vw, 1220px);
+  justify-content: center;
+}
+
+.login-unified-panel {
+  border-radius: 28px;
+  padding: 14px;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(95, 141, 240, 0.2), transparent 36%),
+    radial-gradient(circle at 88% 84%, rgba(199, 109, 74, 0.18), transparent 34%),
+    linear-gradient(150deg, rgba(9, 24, 50, 0.96) 0%, rgba(20, 51, 95, 0.9) 100%);
+  border: 1px solid rgba(164, 198, 255, 0.28);
+  box-shadow: 0 26px 46px rgba(9, 25, 50, 0.34);
+}
+
+.login-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr;
+  gap: 0;
+  align-items: stretch;
+}
+
+.login-brand-panel {
+  border-radius: 18px 0 0 18px;
+  padding: 28px;
+  background: linear-gradient(180deg, rgba(14, 35, 70, 0.4) 0%, rgba(14, 35, 70, 0.2) 100%);
+  color: #f4f8ff;
+  box-shadow: inset 0 0 0 1px rgba(157, 194, 255, 0.08);
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.login-brand-copy h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 2.7vw, 2.7rem);
+  line-height: 1.12;
+  letter-spacing: 0.2px;
+}
+
+.login-subtitle {
+  margin-top: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(215, 232, 255, 0.92);
+}
+
+.login-brand-copy p {
+  margin: 0;
+  color: rgba(239, 246, 255, 0.9);
+  line-height: 1.55;
+}
+
+.login-kicker {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: #b8d3ff;
+}
+
+.login-image-frame {
+  margin-top: auto;
+  min-height: 270px;
+  border-radius: 18px;
+  border: 1px solid rgba(168, 204, 255, 0.28);
+  background:
+    linear-gradient(180deg, rgba(9, 26, 52, 0.35) 0%, rgba(9, 26, 52, 0.6) 100%),
+    url("/login-image.png") center/cover no-repeat;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 16px 32px rgba(6, 19, 42, 0.32);
+}
+
+.login-auth-panel-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid rgba(164, 198, 255, 0.22);
+  border-radius: 0 18px 18px 0;
+  padding: 26px 24px;
+  background: linear-gradient(180deg, rgba(10, 28, 56, 0.34) 0%, rgba(8, 23, 47, 0.52) 100%);
+}
+
+.auth-panel {
+  width: min(100%, 420px);
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  border: none;
+  background: transparent;
+}
+
+.auth-panel h2 {
+  margin: 0 0 14px;
+  color: #f4f8ff;
+  font-size: 1.6rem;
+}
+
+.auth-panel form {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-panel .ghost {
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #f3f8ff;
+  border: 1px solid rgba(167, 198, 245, 0.4);
+}
+
+.auth-panel input {
+  background: rgba(248, 252, 255, 0.94);
+  border-color: rgba(186, 205, 236, 0.9);
+}
+
+.auth-panel input:focus {
+  outline: none;
+  border-color: #5f8df0;
+  box-shadow: 0 0 0 3px rgba(95, 141, 240, 0.18);
+}
+
+.auth-panel button[type="submit"] {
+  background: linear-gradient(180deg, #77a6ff 0%, #4f7de1 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 20px rgba(18, 47, 97, 0.36);
+}
+
+.auth-panel .error {
+  color: #ffd7d7;
+  margin: 2px 0;
+}
+
 .hero-top-row + .dashboard-export-region {
   margin-top: -12px;
 }
@@ -312,6 +448,24 @@ body {
   margin-bottom: 10px;
 }
 
+.widget-config .trend-line-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.widget-config .trend-line-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.widget-config .trend-line-toggle span {
+  white-space: nowrap;
+}
+
 input,
 select,
 button {
@@ -408,7 +562,38 @@ button.danger {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+}
+
+.selection-toolbar-text {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.add-widget-panel {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  gap: 8px;
+  align-items: end;
+  margin: 6px 0 10px;
+}
+
+.add-widget-panel .error {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+@media (max-width: 1180px) {
+  .add-widget-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .add-widget-panel button {
+    grid-column: 1 / -1;
+  }
 }
 
 .analytics-top-row {
@@ -416,6 +601,10 @@ button.danger {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   align-items: stretch;
+}
+
+.analytics-top-row > .card {
+  height: 100%;
 }
 
 .analytics-control-panel {
@@ -487,6 +676,35 @@ button.danger {
     "slider slider";
   gap: 8px;
   align-items: end;
+}
+
+.anomaly-compact-panel .anomaly-date-group {
+  margin: 4px 0 8px;
+  grid-template-columns: minmax(118px, 1fr) minmax(118px, 1fr) minmax(120px, 170px);
+  grid-template-areas: "start end slider";
+  gap: 6px;
+  align-items: center;
+}
+
+.anomaly-compact-panel .anomaly-date-group .analytics-date-control {
+  gap: 0;
+}
+
+.anomaly-compact-panel .anomaly-date-group .analytics-date-control input[type="date"] {
+  padding: 4px 6px;
+  font-size: 11px;
+  min-height: 30px;
+}
+
+.anomaly-compact-panel .anomaly-date-group .analytics-slider-below {
+  margin-top: 0;
+  align-self: center;
+  justify-self: end;
+  width: min(100%, 160px);
+}
+
+.anomaly-compact-panel .anomaly-date-group .dual-range-slider-compact {
+  height: 18px;
 }
 
 .analytics-date-start {
@@ -633,6 +851,48 @@ button.danger {
 .data-quality-panel h3 {
   margin: 0 0 4px;
   line-height: 1.15;
+}
+
+.ai-insight-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px 10px;
+}
+
+.ai-insight-panel h3 {
+  margin: 0 0 2px;
+  line-height: 1.15;
+}
+
+.ai-insight-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.ai-insight-list li {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: #233646;
+}
+
+.anomaly-compact-panel {
+  gap: 6px;
+  align-content: start;
+}
+
+.anomaly-compact-list {
+  gap: 4px;
+  max-height: 170px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.anomaly-compact-list li {
+  font-size: 12px;
+  line-height: 1.25;
 }
 
 .dq-metric-grid {
@@ -1082,6 +1342,132 @@ button.danger {
   gap: 12px;
 }
 
+.business-insights-tab {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.business-insights-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+
+.business-insights-head h3,
+.business-insights-head p {
+  margin: 0;
+}
+
+.business-insights-head .muted {
+  margin-top: 2px;
+}
+
+.business-insight-summary-compact {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(34, 48, 72, 0.06), rgba(34, 48, 72, 0.02));
+  min-width: 0;
+  overflow: hidden;
+}
+
+.business-insight-summary-compact h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.business-insight-summary-compact ul {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.22rem;
+}
+
+.business-insight-summary-compact li {
+  font-size: 0.82rem;
+  line-height: 1.25;
+  color: var(--muted-color);
+}
+
+.business-insight-summary-compact .business-insight-strip {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  animation: business-insight-marquee 22s linear infinite;
+  will-change: transform;
+}
+
+.business-insight-summary-compact:hover .business-insight-strip {
+  animation-play-state: paused;
+}
+
+.business-insight-summary-compact .business-insight-strip li {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  color: var(--muted-color);
+}
+
+.business-insight-summary-compact .business-insight-strip li:not(:last-child)::after {
+  content: "|";
+  margin-left: 0.65rem;
+  color: color-mix(in oklab, var(--muted-color) 65%, white 35%);
+}
+
+@keyframes business-insight-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-28%);
+  }
+}
+
+.business-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: 16px;
+  margin-top: 4px;
+  min-width: 0;
+}
+
+.business-insight-card {
+  border: 1px solid #dce5df;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.business-insight-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .business-insights-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .weekly-metrics-flat-table th,
 .weekly-metrics-flat-table td {
   min-width: 130px;
@@ -1233,11 +1619,34 @@ button.danger {
 .selection-actions {
   display: flex;
   gap: 8px;
+  margin-left: auto;
+  flex-wrap: nowrap;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f8fbf9;
+  border: 1px solid #dce5df;
 }
 
 .selection-actions button {
   width: auto;
   min-width: 90px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+@media (max-width: 900px) {
+  .selection-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .selection-actions {
+    margin-left: 0;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
 }
 
 .pdf-capture-surface {
@@ -1488,6 +1897,32 @@ button.danger {
 }
 
 @media (max-width: 900px) {
+  .login-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .login-brand-panel {
+    border-radius: 14px 14px 0 0;
+    padding: 20px;
+    gap: 14px;
+  }
+
+  .login-image-frame {
+    min-height: 220px;
+  }
+
+  .login-auth-panel-wrap {
+    justify-content: stretch;
+    border-left: none;
+    border-top: 1px solid rgba(164, 198, 255, 0.24);
+    border-radius: 0 0 14px 14px;
+    padding: 18px 16px 20px;
+  }
+
+  .auth-panel {
+    width: 100%;
+  }
+
   .two-col,
   .actions,
   .widget-config {
@@ -1576,7 +2011,8 @@ button.danger {
   }
 
   .analytics-control-panel,
-  .data-quality-panel {
+  .data-quality-panel,
+  .ai-insight-panel {
     height: 100%;
   }
 
@@ -1623,7 +2059,8 @@ button.danger {
 
   .analytics-top-row > .card,
   .analytics-control-panel,
-  .data-quality-panel {
+  .data-quality-panel,
+  .ai-insight-panel {
     height: 100%;
   }
 }

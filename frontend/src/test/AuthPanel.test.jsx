@@ -36,7 +36,7 @@ describe("AuthPanel – login mode", () => {
     fireEvent.change(screen.getByPlaceholderText("Password"), {
       target: { value: "pass1234" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Login" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
 
     await waitFor(() => expect(api.login).toHaveBeenCalledWith({
       email: "user@test.com",
@@ -55,7 +55,7 @@ describe("AuthPanel – login mode", () => {
     fireEvent.change(screen.getByPlaceholderText("Password"), {
       target: { value: "pass1234" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Login" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
 
     await waitFor(() => expect(onLoggedIn).toHaveBeenCalled());
   });
@@ -72,7 +72,7 @@ describe("AuthPanel – login mode", () => {
     fireEvent.change(screen.getByPlaceholderText("Password"), {
       target: { value: "wrongpass" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Login" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
 
     await waitFor(() =>
       expect(screen.getByText("Invalid credentials")).toBeInTheDocument()
@@ -82,9 +82,9 @@ describe("AuthPanel – login mode", () => {
   it("switches to register mode when toggle button clicked", () => {
     render(<AuthPanel onLoggedIn={() => {}} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /switch to register/i }));
+    fireEvent.click(screen.getByRole("button", { name: /switch to sign up/i }));
 
     expect(screen.getByPlaceholderText("Full name")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Register + Login" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign Up" })).toBeInTheDocument();
   });
 });

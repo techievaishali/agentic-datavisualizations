@@ -81,3 +81,27 @@ def get_report_kpis(
         details={"mode": result.get("mode", "unknown"), "card_count": len(result.get("cards", []))},
     )
     return result
+
+
+@router.get("/{report_id}/business-insights")
+def get_business_insights(report_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    report = (
+        db.query(Report)
+        .join(Dataset, Dataset.id == Report.dataset_id)
+        .filter(Report.id == report_id, Dataset.owner_id == user.id)
+        .first()
+    )
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    dataset = report.dataset
+    if not dataset:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    spec = orchestrator.create_report_spec(dataset.curated_path, dataset.profile, report.period)
+    return {
+        "report_id": report.id,
+        "dataset_id": dataset.id,
+        "period": report.period,
+        "report_spec": spec,
+    }
