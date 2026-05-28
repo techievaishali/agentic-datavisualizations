@@ -63,4 +63,18 @@ describe("UploadZone", () => {
     fireEvent.dragLeave(zone);
     expect(zone.classList.contains("dragging")).toBe(false);
   });
+
+  it("shows compact unsupported format error and skips upload", async () => {
+    const onUpload = vi.fn().mockResolvedValue(undefined);
+    render(<UploadZone onUpload={onUpload} />);
+
+    const file = new File(["dummy"], "notes.txt", { type: "text/plain" });
+    const input = document.querySelector("input[type='file']");
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(
+      screen.getByText("Unsupported file format. Please upload CSV, Excel, or XML")
+    ).toBeInTheDocument();
+    expect(onUpload).not.toHaveBeenCalled();
+  });
 });

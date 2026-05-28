@@ -85,7 +85,10 @@ const buildWidgetTitle = (widget) => {
   const x = widget?.x_field;
   const y = widget?.y_field;
 
-  if (chartType === "kpi" && y) return `Total ${toTitleCase(y)}`;
+  if (chartType === "kpi" && y) {
+    const cleanY = y.replace(/^total[_\s]+/i, "");
+    return `Total ${toTitleCase(cleanY)}`;
+  }
   if (chartType === "line" && x && y) return `${toTitleCase(y)} Trend Over ${toTitleCase(x)}`;
   if (chartType === "line_compare" && x && y) return `${toTitleCase(y)} and comparison trend over ${toTitleCase(x)}`;
   if (chartType === "bar" && x && y) return `${toTitleCase(y)} by ${toTitleCase(x)}`;
@@ -1953,16 +1956,26 @@ export default function App() {
                   <button className="ghost" type="button" onClick={toggleAllWidgets}>
                     {allWidgetsSelected ? "Deselect All" : "Select All"}
                   </button>
-                  <button className="ghost" disabled={!selectedDatasetId || busy} onClick={exportDashboardPdf}>
-                    Export Dashboard to PDF
-                  </button>
-                  <button
-                    className="ghost"
-                    disabled={!selectedDatasetId || !selectedWidgetIds.length || busy}
-                    onClick={exportSelectedWidgetsPdf}
-                  >
-                    Export Selected Widgets PDF
-                  </button>
+                  <span className="button-tooltip" data-tooltip="Export entire dashboard to PDF">
+                    <button
+                      className="ghost"
+                      disabled={!selectedDatasetId || busy}
+                      title="Export Entire Dashboard to PDF"
+                      onClick={exportDashboardPdf}
+                    >
+                      Export Dashboard to PDF
+                    </button>
+                  </span>
+                  <span className="button-tooltip" data-tooltip="Export Specific Selected dashboard to PDF">
+                    <button
+                      className="ghost"
+                      disabled={!selectedDatasetId || !selectedWidgetIds.length || busy}
+                      title="Export Specific Selected Dashboard to PDF"
+                      onClick={exportSelectedWidgetsPdf}
+                    >
+                      Export Selected Widget to PDF
+                    </button>
+                  </span>
                 </div>
               </div>
               {showAddWidgetForm && (

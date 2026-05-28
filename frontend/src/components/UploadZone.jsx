@@ -1,6 +1,16 @@
 import { useRef, useState } from "react";
 
 export default function UploadZone({ onUpload, onGenerateReport, generateReportDisabled = false }) {
+  const SUPPORTED_EXTENSIONS = ["csv", "xls", "xlsx", "xml"];
+  const SUPPORTED_MIME_TYPES = [
+    "text/csv",
+    "application/csv",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/xml",
+    "text/xml",
+  ];
+  const UNSUPPORTED_FILE_MESSAGE = "Unsupported file format. Please upload CSV, Excel, or XML";
   const [dragging, setDragging] = useState(false);
   const [datasetName, setDatasetName] = useState("");
   const [error, setError] = useState("");
@@ -12,7 +22,29 @@ export default function UploadZone({ onUpload, onGenerateReport, generateReportD
     return raw || "dataset";
   };
 
+  const isSupportedFile = (file) => {
+    const name = file?.name || "";
+    const extension = name.includes(".") ? name.split(".").pop().toLowerCase() : "";
+    const mimeType = String(file?.type || "").toLowerCase();
+    return SUPPORTED_EXTENSIONS.includes(extension) || SUPPORTED_MIME_TYPES.includes(mimeType);
+  };
+
+  const handleFileSelection = async (file, inputElement) => {
+    if (!file) return;
+    await processFile(file);
+    // Clear value so selecting the same file again still triggers onChange.
+    if (inputElement) {
+      inputElement.value = "";
+    }
+  };
+
   const processFile = async (file) => {
+    if (!isSupportedFile(file)) {
+      setHasUploadedFile(false);
+      setError(UNSUPPORTED_FILE_MESSAGE);
+      return;
+    }
+
     const finalName = datasetName.trim() || inferDatasetName(file);
     setDatasetName(finalName);
     setError("");
@@ -38,7 +70,12 @@ export default function UploadZone({ onUpload, onGenerateReport, generateReportD
         <button
           type="button"
           className="upload-file-btn"
-          onClick={() => inputRef.current?.click()}
+          onClick={() => {
+            if (inputRef.current) {
+              inputRef.current.value = "";
+            }
+            inputRef.current?.click();
+          }}
         >
           Upload File
         </button>
@@ -78,10 +115,14 @@ export default function UploadZone({ onUpload, onGenerateReport, generateReportD
           accept=".csv,.xlsx,.xls,.xml"
           autocomplete="off"
           style={{ display: "none" }}
-          onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])}
+          onChange={(e) => handleFileSelection(e.target.files?.[0], e.target)}
         />
       </div>
-      {error && <p className="error">{error}</p>}
+      {error && (
+        <div className="upload-format-error" role="alert" aria-live="polite">
+          {error}
+        </div>
+      )}
     </section>
   );
 }
