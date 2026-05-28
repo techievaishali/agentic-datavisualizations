@@ -24,38 +24,46 @@ export default function AuthPanel({ onLoggedIn, onRegistered }) {
   };
 
   return (
-    <section className="card auth-panel">
-      <h2>Secure Access</h2>
-      <p>Register once, then sign in to use the autonomous dashboard pipeline.</p>
+    <section className="auth-panel">
+      <h2>{mode === "register" ? "Sign Up" : "Sign In"}</h2>
       <form onSubmit={submit}>
         {mode === "register" && (
           <input
+            id="auth-fullname"
+            name="full_name"
             placeholder="Full name"
+            autoComplete="name"
             value={form.full_name}
             onChange={(e) => setForm({ ...form, full_name: e.target.value })}
             required
           />
         )}
         <input
-          placeholder="Email"
+          id="auth-email"
+          name="email"
           type="email"
+          placeholder="Email"
+          autoComplete="email"
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
           required
         />
         <input
-          placeholder="Password"
+          id="auth-password"
+          name="password"
           type="password"
+          placeholder="Password"
+          autoComplete={mode === "register" ? "new-password" : "current-password"}
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
           minLength={8}
           required
         />
         {error && <p className="error">{error}</p>}
-        <button type="submit">{mode === "register" ? "Register + Login" : "Login"}</button>
+        <button type="submit">{mode === "register" ? "Sign Up" : "Sign In"}</button>
       </form>
       <button className="ghost" onClick={() => setMode(mode === "login" ? "register" : "login")}>
-        Switch to {mode === "login" ? "register" : "login"}
+        Switch to {mode === "login" ? "Sign Up" : "Sign In"}
       </button>
     </section>
   );

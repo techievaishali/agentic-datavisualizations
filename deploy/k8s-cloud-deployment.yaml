@@ -1,0 +1,185 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agentic-ai
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: agentic-ai-secrets
+  namespace: agentic-ai
+type: Opaque
+stringData:
+  # Replace before deploy.
+  SECRET_KEY: "replace-with-strong-random-secret"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agentic-ai-config
+  namespace: agentic-ai
+data:
+  API_PREFIX: "/api"
+  DATABASE_URL: "sqlite:////data/agentic_viz.db"
+  RAW_DATA_DIR: "/data/raw"
+  CURATED_DATA_DIR: "/data/curated"
+  ALLOW_ORIGINS: "https://your-domain.example"
+  # Optional LLM settings.
+  LLM_PROVIDER: "none"
+  LLM_MODEL: "gemini-1.5-flash"
+  LLM_TEMPERATURE: "0.2"
+  OLLAMA_BASE_URL: "http://localhost:11434"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: agentic-ai-data-pvc
+  namespace: agentic-ai
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agentic-ai-backend
+  namespace: agentic-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agentic-ai-backend
+  template:
+    metadata:
+      labels:
+        app: agentic-ai-backend
+    spec:
+      containers:
+        - name: backend
+          # Replace with your pushed backend image.
+          image: ghcr.io/your-org/agentic-ai-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: agentic-ai-config
+          env:
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: agentic-ai-secrets
+                  key: SECRET_KEY
+          volumeMounts:
+            - name: app-data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: agentic-ai-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agentic-ai-backend
+  namespace: agentic-ai
+spec:
+  selector:
+    app: agentic-ai-backend
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agentic-ai-frontend
+  namespace: agentic-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agentic-ai-frontend
+  template:
+    metadata:
+      labels:
+        app: agentic-ai-frontend
+    spec:
+      containers:
+        - name: frontend
+          # Replace with your pushed frontend image.
+          image: ghcr.io/your-org/agentic-ai-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agentic-ai-frontend
+  namespace: agentic-ai
+spec:
+  selector:
+    app: agentic-ai-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: agentic-ai-ingress
+  namespace: agentic-ai
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: your-domain.example
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: agentic-ai-backend
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: agentic-ai-frontend
+                port:
+                  number: 80
