@@ -26,6 +26,9 @@ backend/.env
 # Runtime/session artifacts
 .runtime/
 
+# Local helper scripts
+check_widgets.py
+
 # Generated reports/artifacts
 frontend/bundle-report.html
 frontend/.lighthouse-seo.json
